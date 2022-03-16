@@ -18,6 +18,11 @@ public:
 
 	template<class Class, typename ...Args>
 	Command(Class* cls, int(Class::* newCmd)(Args...)) {
+		if (cls == nullptr || newCmd == nullptr)
+			throw std::exception("Command init : unexpected 'nullptr' from function's params");
+		if (args.size() != sizeof...(Args))
+			throw std::exception("Command init : Inits uncorrect count of arguments");
+
 		funcCaller = [cls, newCmd](const std::vector<int>& funcArgs) {
 			return CallFunc(cls, newCmd, funcArgs, std::make_index_sequence<sizeof...(Args)>{});
 		};
@@ -29,15 +34,16 @@ public:
 };
 
 class CommandArguments {
-	std::map<std::string, int> arguments;
-	std::vector<int*> pValues;
+	std::map<std::string, int*> arguments;
+	std::vector<int> values;
 
 public:
 	CommandArguments() = delete;
 
 	CommandArguments(const std::vector<std::pair<std::string, int>> args) {
 		for (auto arg : args) {
-			pValues.push_back(&(arguments.insert(arg).first->second));
+			values.push_back(arg.second);
+			arguments.insert(std::pair<std::string, int*>(arg.first, &values.back()));
 		}
 	}
 
@@ -45,22 +51,15 @@ public:
 		return arguments.size();
 	}
 
-	int& value(const std::string name) {
-		return arguments[name];
-	}
-
 	void update(const std::string name, int val) {
-		value(name) = val;
+		if(arguments.find(name) == arguments.end())
+			throw std::exception("Command arguments : unknown argument name");
+
+		*arguments[name] = val;
 	}
 
-	std::vector<int> values() {
-		std::vector<int> resultVec;
-
-		for (auto val : pValues) {
-			resultVec.push_back(*val);
-		}
-
-		return resultVec;
+	std::vector<int> getValues() const {
+		return values;
 	}
 };
 
@@ -84,6 +83,6 @@ public:
 
 	int executeCommand(std::vector<std::pair<std::string, int>> args = {}) {
 		correctArguments(args);
-		return cmd.executeCommand(cmdArgs.values());
+		return cmd.executeCommand(cmdArgs.getValues());
 	}
 };

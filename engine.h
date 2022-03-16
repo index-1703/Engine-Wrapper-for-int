@@ -18,10 +18,16 @@ public:
 	}
 
 	void register_command(Wrapper* cmd, const std::string& cmdName) {
+		if (cmd == nullptr)
+			throw std::exception("Engine register command : unexpected 'nullptr' from 'Wrapper *command' pointer");
+
 		cmds[cmdName] = cmd;
 	}
 
 	int execute(const std::string& cmdName, std::vector<std::pair<std::string, int>> args = {}) {
+		if (cmds.find(cmdName) == cmds.end())
+			throw std::exception("Engine error : unknown command name");
+
 		return cmds[cmdName]->executeCommand(args);
 	}
 };
